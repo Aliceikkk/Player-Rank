@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>玩家数据排行榜</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- 禁用右键菜单 -->
+    <script>
+        document.oncontextmenu = function(){ return false; }
+        document.onkeydown = function(e) {
+            // 禁用 F12
+            if (e.key === 'F12') {
+                return false;
+            }
+            // 禁用 Ctrl+Shift+I
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                return false;
+            }
+            // 禁用 Ctrl+U (查看源码)
+            if (e.ctrlKey && e.key === 'u') {
+                return false;
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="announcement">
+        <h3>公告</h3>
+        <div id="announcement-content"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('damage')">摧枯拉朽</button>
+                <button class="tab-btn" onclick="switchTab('flight')">飞行专家</button>
+            </div>
+            <button class="refresh-btn" onclick="checkAndRefresh()">
+                <span class="refresh-icon">↻</span> 刷新
+            </button>
+        </div>
+
+        <div id="damage-board" class="leaderboard active">
+            <h2>最强一击排行榜</h2>
+            <div class="rank-list">
+                <!-- 数据将通过JavaScript动态插入 -->
+            </div>
+            <div class="pagination" id="damage-pagination">
+                <!-- 分页控件将通过JavaScript动态插入 -->
+            </div>
+        </div>
+
+        <div id="flight-board" class="leaderboard">
+            <h2>最远飞行距离排行榜</h2>
+            <div class="rank-list">
+                <!-- 数据将通过JavaScript动态插入 -->
+            </div>
+            <div class="pagination" id="flight-pagination">
+                <!-- 分页控件将通过JavaScript动态插入 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用混淆后的脚本 -->
+    <script src="script.js"></script>
+
+</body>
+</html> 
