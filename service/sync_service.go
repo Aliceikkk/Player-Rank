@@ -207,12 +207,16 @@ func (s *SyncService) GetLeaderboards(db *sql.DB, page, pageSize int) (map[strin
 
 	// 获取最强一击排行榜
 	damageRows, err := db.Query(`
-		SELECT uid, nickname, max_critical_damage 
+		SELECT 
+			nickname, 
+			uid,
+			max_critical_damage
 		FROM t_player_stats 
 		ORDER BY max_critical_damage DESC 
 		LIMIT ? OFFSET ?
 	`, pageSize, offset)
 	if err != nil {
+		logger.Error("获取最强一击排行榜数据失败", err)
 		return nil, err
 	}
 	defer damageRows.Close()
@@ -225,6 +229,7 @@ func (s *SyncService) GetLeaderboards(db *sql.DB, page, pageSize int) (map[strin
 		LIMIT ? OFFSET ?
 	`, pageSize, offset)
 	if err != nil {
+		logger.Error("获取最远飞行距离排行榜数据失败", err)
 		return nil, err
 	}
 	defer flightRows.Close()
@@ -233,16 +238,19 @@ func (s *SyncService) GetLeaderboards(db *sql.DB, page, pageSize int) (map[strin
 	var totalDamage, totalFlight int
 	err = db.QueryRow("SELECT COUNT(*) FROM t_player_stats WHERE max_critical_damage > 0").Scan(&totalDamage)
 	if err != nil {
+		logger.Error("获取最强一击总记录数失败", err)
 		return nil, err
 	}
 	err = db.QueryRow("SELECT COUNT(*) FROM t_player_stats WHERE max_fly_map_distance > 0").Scan(&totalFlight)
 	if err != nil {
+		logger.Error("获取最远飞行距离总记录数失败", err)
 		return nil, err
 	}
 
 	// 获取最后更新时间
 	lastUpdate, err := s.GetLastUpdateTime(db)
 	if err != nil {
+		logger.Error("获取最后更新时间失败", err)
 		return nil, err
 	}
 
@@ -268,7 +276,8 @@ func (s *SyncService) GetLeaderboards(db *sql.DB, page, pageSize int) (map[strin
 		var uid uint32
 		var nickname string
 		var damage float64
-		if err := damageRows.Scan(&uid, &nickname, &damage); err != nil {
+		if err := damageRows.Scan(&nickname, &uid, &damage); err != nil {
+			logger.Error(fmt.Sprintf("扫描最强一击数据失败: %v", err))
 			continue
 		}
 		damageData = append(damageData, map[string]interface{}{
@@ -285,6 +294,7 @@ func (s *SyncService) GetLeaderboards(db *sql.DB, page, pageSize int) (map[strin
 		var nickname string
 		var distance float64
 		if err := flightRows.Scan(&uid, &nickname, &distance); err != nil {
+			logger.Error(fmt.Sprintf("扫描飞行距离数据失败: %v", err))
 			continue
 		}
 		flightData = append(flightData, map[string]interface{}{
@@ -302,6 +312,7 @@ func (s *SyncService) GetLastUpdateTime(db *sql.DB) (int64, error) {
 	var lastUpdate int64
 	err := db.QueryRow("SELECT MAX(last_update_time) FROM t_player_stats").Scan(&lastUpdate)
 	if err != nil {
+		logger.Error("获取最后更新时间失败", err)
 		return 0, err
 	}
 	return lastUpdate, nil

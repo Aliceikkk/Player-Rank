@@ -1,5 +1,5 @@
 // 配置部分
-const API_BASE_URL = 'http://192.168.1.81:8080';
+const API_BASE_URL = 'http://127.0.0.1:8080';
 const API_KEY = 'genshinimpact2023';  // 修改为与后端config.json中的api_secret一致
 
 // 生成签名函数
@@ -152,26 +152,69 @@ function createPagination(type, totalPages, currentPage) {
     const pagination = document.getElementById(`${type}-pagination`);
     pagination.innerHTML = '';
 
-    // 上一页按钮
+    // 添加上一页按钮
     const prevBtn = document.createElement('button');
-    prevBtn.className = 'page-btn';
+    prevBtn.className = 'page-btn prev-btn';
     prevBtn.textContent = '上一页';
     prevBtn.disabled = currentPage === 1;
     prevBtn.onclick = () => changePage(type, currentPage - 1);
     pagination.appendChild(prevBtn);
 
-    // 页码按钮
-    for (let i = 1; i <= totalPages; i++) {
+    // 计算要显示的页码范围
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    
+    // 调整startPage确保显示5个页码
+    if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+    }
+
+    // 显示第一页
+    if (startPage > 1) {
+        const firstBtn = document.createElement('button');
+        firstBtn.className = 'page-btn';
+        firstBtn.textContent = '1';
+        firstBtn.onclick = () => changePage(type, 1);
+        pagination.appendChild(firstBtn);
+        
+        if (startPage > 2) {
+            const ellipsis = document.createElement('span');
+            ellipsis.textContent = '...';
+            ellipsis.className = 'page-btn';
+            ellipsis.style.cursor = 'default';
+            pagination.appendChild(ellipsis);
+        }
+    }
+
+    // 显示页码
+    for (let i = startPage; i <= endPage; i++) {
         const pageBtn = document.createElement('button');
-        pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+        pageBtn.className = `page-btn number-btn ${i === currentPage ? 'active' : ''}`;
         pageBtn.textContent = i;
         pageBtn.onclick = () => changePage(type, i);
         pagination.appendChild(pageBtn);
     }
 
-    // 下一页按钮
+    // 显示最后一页
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.textContent = '...';
+            ellipsis.className = 'page-btn';
+            ellipsis.style.cursor = 'default';
+            pagination.appendChild(ellipsis);
+        }
+        
+        const lastBtn = document.createElement('button');
+        lastBtn.className = 'page-btn';
+        lastBtn.textContent = totalPages;
+        lastBtn.onclick = () => changePage(type, totalPages);
+        pagination.appendChild(lastBtn);
+    }
+
+    // 添加下一页按钮
     const nextBtn = document.createElement('button');
-    nextBtn.className = 'page-btn';
+    nextBtn.className = 'page-btn next-btn';
     nextBtn.textContent = '下一页';
     nextBtn.disabled = currentPage === totalPages;
     nextBtn.onclick = () => changePage(type, currentPage + 1);
@@ -201,7 +244,10 @@ async function updateLeaderboards() {
                 <div class="rank-item">
                     <div class="rank rank-${index + 1}">${(data.damage.page - 1) * 8 + index + 1}</div>
                     <div class="player-info">
-                        <div class="player-name">${player.nickname}</div>
+                        <div class="player-details">
+                            <div class="player-name">${player.nickname}</div>
+                            <div class="player-uid">UID: ${player.uid || '未知'}</div>
+                        </div>
                         <div class="player-score">${formatNumber(player.max_critical_damage)}</div>
                     </div>
                 </div>
@@ -214,7 +260,10 @@ async function updateLeaderboards() {
                 <div class="rank-item">
                     <div class="rank rank-${index + 1}">${(data.flight.page - 1) * 8 + index + 1}</div>
                     <div class="player-info">
-                        <div class="player-name">${player.nickname}</div>
+                        <div class="player-details">
+                            <div class="player-name">${player.nickname}</div>
+                            <div class="player-uid">UID: ${player.uid || '未知'}</div>
+                        </div>
                         <div class="player-score">${formatNumber(player.max_fly_distance)}米</div>
                     </div>
                 </div>
@@ -224,7 +273,7 @@ async function updateLeaderboards() {
             createPagination('damage', data.damage.totalPages, data.damage.page);
             createPagination('flight', data.flight.totalPages, data.flight.page);
 
-            // 更新间戳
+            // 更���间戳
             if (data.timestamp) {
                 lastUpdateTimestamp = data.timestamp;
             }

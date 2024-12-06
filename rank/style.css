@@ -14,13 +14,14 @@ body {
 .announcement {
     position: fixed;
     left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 20px;
+    transform: none;
     background: rgba(255, 255, 255, 0.9);
     padding: 20px;
     border-radius: 15px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
     max-width: 300px;
+    z-index: 1000;
 }
 
 .announcement h3 {
@@ -42,7 +43,8 @@ body {
     width: 80%;
     max-width: 800px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-    margin-left: 320px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .tabs {
@@ -108,6 +110,14 @@ h2 {
 
 .player-info {
     flex-grow: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.player-details {
+    display: flex;
+    flex-direction: column;
 }
 
 .player-name {
@@ -121,11 +131,19 @@ h2 {
     color: #666;
 }
 
+.player-uid {
+    font-size: 14px;
+    color: #888;
+    margin-top: 2px;
+}
+
 .pagination {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 5px;
     margin-top: 20px;
+    flex-wrap: wrap;
+    max-width: 100%;
 }
 
 .page-btn {
@@ -135,6 +153,8 @@ h2 {
     cursor: pointer;
     border-radius: 5px;
     transition: all 0.3s;
+    margin: 2px;
+    min-width: 32px;
 }
 
 .page-btn:hover {
@@ -186,4 +206,56 @@ h2 {
 
 @keyframes spin {
     100% { transform: rotate(360deg); }
+}
+
+@media screen and (max-width: 768px) {
+    body {
+        padding: 20px;
+        flex-direction: column;
+    }
+
+    .announcement {
+        position: relative;
+        left: 0;
+        top: 0;
+        max-width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .container {
+        width: 100%;
+        margin: 0;
+        padding: 15px;
+    }
+
+    .rank-item {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .player-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .rank {
+        margin-bottom: 10px;
+    }
+
+    .tab-btn {
+        padding: 8px 12px;
+        font-size: 16px;
+    }
+
+    .player-name {
+        font-size: 16px;
+    }
+
+    .player-score {
+        font-size: 14px;
+    }
+
+    .player-uid {
+        font-size: 12px;
+    }
 } 
