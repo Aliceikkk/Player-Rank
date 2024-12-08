@@ -25,6 +25,7 @@ type Config struct {
 	HttpPort            int    `json:"http_port"`
 	ApiSecret           string `json:"api_secret"`
 	Announcement        string `json:"announcement"`
+	LastSaveTime       string `json:"last_save_time"`
 }
 
 func LoadConfig() (*Config, error) {

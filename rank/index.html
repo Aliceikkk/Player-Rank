@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>玩家数据排行榜</title>
+    <link rel="icon" href="img/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <!-- 禁用右键菜单 -->
     <script>
@@ -37,9 +38,7 @@
                 <button class="tab-btn active" onclick="switchTab('damage')">摧枯拉朽</button>
                 <button class="tab-btn" onclick="switchTab('flight')">飞行专家</button>
             </div>
-            <button class="refresh-btn" onclick="checkAndRefresh()">
-                <span class="refresh-icon">↻</span> 刷新
-            </button>
+            <button class="admin-btn" onclick="window.location.href='admin.html'">后台管理</button>
         </div>
 
         <div id="damage-board" class="leaderboard active">
@@ -63,7 +62,8 @@
         </div>
     </div>
 
-    <!-- 使用混淆后的脚本 -->
+    <!-- 添加配置文件 -->
+    <script src="config.js"></script>
     <script src="script.js"></script>
 
 </body>

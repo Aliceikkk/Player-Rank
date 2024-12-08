@@ -1,7 +1,3 @@
-// 配置部分
-const API_BASE_URL = 'http://127.0.0.1:8080';
-const API_KEY = 'genshinimpact2023';  // 修改为与后端config.json中的api_secret一致
-
 // 生成签名函数
 async function generateSignature(params) {
     const timestamp = Math.floor(Date.now() / 1000);
@@ -23,7 +19,7 @@ async function generateSignature(params) {
     }
     
     // 添加时间戳和密钥
-    signStr += `timestamp=${timestamp}&key=${API_KEY}`;
+    signStr += `timestamp=${timestamp}&key=${API_CONFIG.API_KEY}`;
     
     //console.log('签名字符串:', signStr);
     
@@ -232,7 +228,7 @@ async function updateLeaderboards() {
     };
 
     const { signature, timestamp } = await generateSignature(params);
-    const apiUrl = `${API_BASE_URL}/api/leaderboards?page=${params.page}&timestamp=${timestamp}&signature=${signature}`;
+    const apiUrl = `${API_CONFIG.BASE_URL}/api/leaderboards?page=${params.page}&timestamp=${timestamp}&signature=${signature}`;
     
     fetch(apiUrl)
         .then(response => response.json())
@@ -273,7 +269,7 @@ async function updateLeaderboards() {
             createPagination('damage', data.damage.totalPages, data.damage.page);
             createPagination('flight', data.flight.totalPages, data.flight.page);
 
-            // 更���间戳
+            // 更新时间戳
             if (data.timestamp) {
                 lastUpdateTimestamp = data.timestamp;
             }
@@ -284,7 +280,7 @@ async function updateLeaderboards() {
 async function updateAnnouncement() {
     try {
         const { signature, timestamp } = await generateSignature({});
-        const apiUrl = `${API_BASE_URL}/api/announcement?timestamp=${timestamp}&signature=${signature}`;
+        const apiUrl = `${API_CONFIG.BASE_URL}/api/announcement?timestamp=${timestamp}&signature=${signature}`;
         
         const response = await fetch(apiUrl, {
             method: 'GET',
@@ -317,7 +313,7 @@ async function checkAndRefresh() {
     };
 
     const { signature, timestamp } = await generateSignature(params);
-    const apiUrl = `${API_BASE_URL}/api/check-update?lastUpdate=${lastUpdateTimestamp}&timestamp=${timestamp}&signature=${signature}`;
+    const apiUrl = `${API_CONFIG.BASE_URL}/api/check-update?lastUpdate=${lastUpdateTimestamp}&timestamp=${timestamp}&signature=${signature}`;
 
     fetch(apiUrl)
         .then(response => response.json())

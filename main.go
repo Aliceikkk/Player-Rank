@@ -62,7 +62,11 @@ func main() {
 	syncService := service.NewSyncService(cfg)
 	logger.Info("玩家Rank开启成功")
 
-	httpService := service.NewHttpService(syncService)
+	// 创建管理员服务
+	adminService := service.NewAdminService(cfg)
+	adminService.StartConfigMonitor() // 启动配置监控
+
+	httpService := service.NewHttpService(syncService, adminService)
 
 	// 创建错误通道
 	errChan := make(chan error, 3)

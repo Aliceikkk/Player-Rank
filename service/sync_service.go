@@ -100,7 +100,26 @@ func (s *SyncService) processAllTables(sourceDB, targetDB *sql.DB) (int, error) 
 }
 
 func (s *SyncService) processTable(tableName string, sourceDB, targetDB *sql.DB) (int, error) {
-	rows, err := sourceDB.Query(fmt.Sprintf("SELECT uid, bin_data FROM %s", tableName))
+	// 解析配置中的时间
+	configTime, err := time.Parse("2006-01-02 15:04:05", s.config.LastSaveTime)
+	if err != nil {
+		return 0, fmt.Errorf("解析配置时间失败: %v", err)
+	}
+
+	// 添加调试日志
+	logger.Info(fmt.Sprintf("配置的时间阈值: %v", configTime))
+
+	// 先检查表中是否有符合条件的数据
+	var count int
+	err = sourceDB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE last_save_time > ?", tableName), configTime).Scan(&count)
+	if err != nil {
+		logger.Error(fmt.Sprintf("检查表 %s 数据失败: %v", tableName, err))
+	} else {
+		logger.Info(fmt.Sprintf("表 %s 中有 %d 条数据需要更新", tableName, count))
+	}
+
+	// 修改查询语句，加入last_save_time字段
+	rows, err := sourceDB.Query(fmt.Sprintf("SELECT uid, bin_data, last_save_time FROM %s", tableName))
 	if err != nil {
 		return 0, err
 	}
@@ -108,31 +127,62 @@ func (s *SyncService) processTable(tableName string, sourceDB, targetDB *sql.DB)
 
 	updated := 0
 	for rows.Next() {
-		if err := s.processRow(rows, targetDB); err != nil {
-			//logger.Error(fmt.Sprintf("Failed to process row for table: %s", tableName), err)
+		var uid uint32
+		var binData []byte
+		var lastSaveTimeStr sql.NullString
+		if err := rows.Scan(&uid, &binData, &lastSaveTimeStr); err != nil {
+			logger.Error(fmt.Sprintf("扫描行数据失败: %v", err))
 			continue
 		}
+
+		// 如果 last_save_time 为空或无效，跳过这条数据
+		if !lastSaveTimeStr.Valid {
+			//logger.Info(fmt.Sprintf("跳过 last_save_time 为空的数据 uid: %d", uid))
+			continue
+		}
+
+		// 解析时间字符串
+		lastSaveTime, err := time.Parse("2006-01-02 15:04:05", lastSaveTimeStr.String)
+		if err != nil {
+			logger.Error(fmt.Sprintf("解析时间失败 uid: %d, time: %s, error: %v", uid, lastSaveTimeStr.String, err))
+			continue
+		}
+
+		// 添加调试日志
+		//logger.Info(fmt.Sprintf("处理数据 uid: %d, last_save_time: %v", uid, lastSaveTime))
+
+		// 比较时间，只处理配置时间之后的数据
+		if !lastSaveTime.After(configTime) {
+			//logger.Info(fmt.Sprintf("跳过旧数据 uid: %d, last_save_time: %v", uid, lastSaveTime))
+			continue
+		}
+
+		if err := s.processRow(rows, targetDB); err != nil {
+			//logger.Error(fmt.Sprintf("处理数据失败 uid: %d, error: %v", uid, err))
+			continue
+		}
+		//logger.Info(fmt.Sprintf("成功更新数据 uid: %d", uid))
 		updated++
 	}
+	logger.Info(fmt.Sprintf("表 %s 处理完成，更新了 %d 条数据", tableName, updated))
 	return updated, rows.Err()
 }
 
 func (s *SyncService) processRow(rows *sql.Rows, targetDB *sql.DB) error {
 	var uid uint32
 	var binData []byte
-	if err := rows.Scan(&uid, &binData); err != nil {
+	var lastSaveTimeStr string
+	if err := rows.Scan(&uid, &binData, &lastSaveTimeStr); err != nil {
 		return err
 	}
 
 	unzlibedData, err := UnzlibData(binData)
 	if err != nil {
-		//logger.Error(fmt.Sprintf("Failed to unzlib data for uid %d", uid), err)
 		return err
 	}
 
 	var playerDataBin pb.PlayerDataBin
 	if err := proto.Unmarshal(unzlibedData, &playerDataBin); err != nil {
-		//logger.Error(fmt.Sprintf("Failed to unmarshal PlayerDataBin for uid %d", uid), err)
 		return err
 	}
 
@@ -140,34 +190,22 @@ func (s *SyncService) processRow(rows *sql.Rows, targetDB *sql.DB) error {
 	nickname := fmt.Sprintf("Player_%d", uid)
 	if basicBin != nil {
 		nickname = string(basicBin.GetNickname())
-		//logger.Info(fmt.Sprintf("Found BasicBin for uid %d: %+v", uid, map[string]interface{}{
-		//	"nickname": nickname,
-		//}))
 	}
 
 	watcherBin := playerDataBin.GetWatcherBin()
 	if watcherBin == nil {
-		//logger.Info(fmt.Sprintf("No WatcherBin found for uid %d", uid))
 		return nil
 	}
 
 	recordValue := watcherBin.GetRecordValue()
 	if recordValue == nil {
-		//logger.Info(fmt.Sprintf("No RecordValue found for uid %d", uid))
 		return nil
 	}
 
 	maxCriticalDamage := recordValue.GetMaxCriticalDamage()
 	maxFlyMapDistance := recordValue.GetMaxFlyMapDistance()
 
-	//logger.Info(fmt.Sprintf("Found record values for uid %d: %+v", uid, map[string]interface{}{
-	//	"nickname":            nickname,
-	//	"max_critical_damage": fmt.Sprintf("%.2f", maxCriticalDamage),
-	//	"max_fly_distance":    fmt.Sprintf("%.2f", maxFlyMapDistance),
-	//}))
-
 	if maxCriticalDamage == 0 && maxFlyMapDistance == 0 {
-		//logger.Info(fmt.Sprintf("Skipping record with no relevant data for uid %d", uid))
 		return nil
 	}
 
@@ -193,11 +231,9 @@ func (s *SyncService) updateStats(db *sql.DB, uid uint32, nickname string, recor
 	)
 
 	if err != nil {
-		//logger.Error(fmt.Sprintf("Failed to update stats for uid %d", uid), err)
 		return err
 	}
 
-	//logger.Info(fmt.Sprintf("Successfully updated player stats for uid %d: %s", uid, nickname))
 	return nil
 }
 
@@ -309,11 +345,17 @@ func (s *SyncService) GetLeaderboards(db *sql.DB, page, pageSize int) (map[strin
 }
 
 func (s *SyncService) GetLastUpdateTime(db *sql.DB) (int64, error) {
-	var lastUpdate int64
+	var lastUpdate sql.NullInt64
 	err := db.QueryRow("SELECT MAX(last_update_time) FROM t_player_stats").Scan(&lastUpdate)
 	if err != nil {
 		logger.Error("获取最后更新时间失败", err)
 		return 0, err
 	}
-	return lastUpdate, nil
+
+	// 如果没有数据或者值为NULL，返回当前时间戳
+	if !lastUpdate.Valid {
+		return time.Now().Unix(), nil
+	}
+
+	return lastUpdate.Int64, nil
 }
