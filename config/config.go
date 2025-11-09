@@ -22,10 +22,9 @@ type Config struct {
 	} `json:"target_mysql"`
 	SyncIntervalMinutes int    `json:"sync_interval_minutes"`
 	ApiPort             int    `json:"api_port"`
-	HttpPort            int    `json:"http_port"`
 	ApiSecret           string `json:"api_secret"`
 	Announcement        string `json:"announcement"`
-	LastSaveTime       string `json:"last_save_time"`
+	LastSaveTime        string `json:"last_save_time"`
 }
 
 func LoadConfig() (*Config, error) {

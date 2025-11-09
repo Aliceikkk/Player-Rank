@@ -26,7 +26,7 @@ func (s *SyncService) SyncData() error {
 	startTime := time.Now()
 	totalUpdated := 0
 
-	// 连接源数据库
+	// 连接玩家数据库
 	sourceDSN := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
 		s.config.SourceMySQL.User,
 		s.config.SourceMySQL.Password,

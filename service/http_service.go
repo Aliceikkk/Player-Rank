@@ -36,17 +36,38 @@ func (h *HttpService) getDB() (*sql.DB, error) {
 func (h *HttpService) StartServer(port int) error {
 	signMiddleware := NewSignatureMiddleware(h.syncService.config.ApiSecret)
 
-	// API路由
-	http.HandleFunc("/api/leaderboards", signMiddleware.Verify(h.handleLeaderboards))
-	http.HandleFunc("/api/announcement", signMiddleware.Verify(h.handleAnnouncement))
-	http.HandleFunc("/api/check-update", signMiddleware.Verify(h.handleCheckUpdate))
-	http.HandleFunc("/api/admin/login", h.handleAdminLogin)
-	http.HandleFunc("/api/admin/config", h.handleConfig)
-	http.HandleFunc("/api/admin/clear", h.handleClearLeaderboard)
+	// API路由 - 所有路由都需要CORS支持
+	http.HandleFunc("/api/leaderboards", h.corsWrapper(signMiddleware.Verify(h.handleLeaderboards)))
+	http.HandleFunc("/api/announcement", h.corsWrapper(signMiddleware.Verify(h.handleAnnouncement)))
+	http.HandleFunc("/api/check-update", h.corsWrapper(signMiddleware.Verify(h.handleCheckUpdate)))
+	http.HandleFunc("/api/admin/login", h.corsWrapper(h.handleAdminLogin))
+	http.HandleFunc("/api/admin/config", h.corsWrapper(h.handleConfig))
+	http.HandleFunc("/api/admin/clear", h.corsWrapper(h.handleClearLeaderboard))
 
 	addr := fmt.Sprintf(":%d", port)
 	logger.Info(fmt.Sprintf("API服务运行在端口: %d", port))
+	logger.Info("前后端分离模式：前端文件请使用独立的HTTP服务器部署")
 	return http.ListenAndServe(addr, nil)
+}
+
+// CORS包装器，统一处理跨域请求
+func (h *HttpService) corsWrapper(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 设置CORS头
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+
+		// 处理预检请求
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// 调用实际的处理函数
+		handler(w, r)
+	}
 }
 
 func (h *HttpService) handleLeaderboards(w http.ResponseWriter, r *http.Request) {

@@ -274,7 +274,10 @@ async function updateLeaderboards() {
                 lastUpdateTimestamp = data.timestamp;
             }
         })
-        .catch(error => console.error('Error fetching leaderboards:', error));
+        .catch(error => {
+            console.error('Error fetching leaderboards:', error);
+            showToast('获取排行榜数据失败，请检查网络连接', 'error', 5000);
+        });
 }
 
 async function updateAnnouncement() {
@@ -301,6 +304,7 @@ async function updateAnnouncement() {
         }
     } catch (error) {
         console.error('获取公告出错:', error);
+        // 静默失败，不打扰用户
     }
 }
 
@@ -330,6 +334,13 @@ async function checkAndRefresh() {
         });
 }
 // 初始加载
-updateLeaderboards();
-updateAnnouncement();
+document.addEventListener('DOMContentLoaded', function() {
+    // 显示欢迎提示
+    setTimeout(() => {
+        showToast('欢迎来到玩家排行榜！', 'info', 2000);
+    }, 500);
+    
+    updateLeaderboards();
+    updateAnnouncement();
+});
 

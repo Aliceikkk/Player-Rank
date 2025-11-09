@@ -2,21 +2,15 @@ package main
 
 import (
 	"data/logger"
-	"embed"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
 	"data/config"
 	"data/service"
 )
-
-//go:embed rank/*
-var PageFS embed.FS
 
 func main() {
 	logger.InitLogger()
@@ -29,27 +23,6 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-
-	// 初始化验证服务
-	verifyService := service.NewVerifyService()
-	
-	if !verifyService.CheckActivation() {
-		machineID := verifyService.GenerateMachineID()
-		fmt.Printf("请输入激活码 (机器ID: %s): ", machineID)
-		
-		var activationCode string
-		fmt.Scanln(&activationCode)
-		
-		if !verifyService.VerifyActivationCode(activationCode, machineID) {
-			logger.Error("激活码无效")
-			return
-		}
-		
-		if err := verifyService.SaveActivationCode(activationCode); err != nil {
-			logger.Error("保存激活码失败:", err)
-			return
-		}
-	}
 
 	// 加载配置
 	cfg, err := config.LoadConfig()
@@ -69,7 +42,7 @@ func main() {
 	httpService := service.NewHttpService(syncService, adminService)
 
 	// 创建错误通道
-	errChan := make(chan error, 3)
+	errChan := make(chan error, 2)
 
 	// 启动数据同步服务
 	go func() {
@@ -99,21 +72,6 @@ func main() {
 		}
 	}()
 
-	// 启动HTTP服务
-	go func() {
-		port := cfg.HttpPort
-		if port == 0 {
-			port = 7070
-		}
-		address := ":" + strconv.Itoa(port)
-		logger.Info(fmt.Sprintf("HTTP服务运行在端口%s", address))
-		
-		if err := http.ListenAndServe(address, http.FileServer(http.FS(PageFS))); err != nil {
-			logger.Error(fmt.Sprintf("HTTP服务失败: %v", err))
-			errChan <- fmt.Errorf("HTTP服务失败: %v", err)
-		}
-	}()
-
 	// 启动API服务
 	go func() {
 		if err := httpService.StartServer(cfg.ApiPort); err != nil {
@@ -133,8 +91,7 @@ func main() {
 		os.Exit(1)
 	case sig := <-sigChan:
 		logger.Info(fmt.Sprintf("接收到系统信号: %v, 正在关闭服务...", sig))
-		// 这里可以添加优雅关闭的逻辑
-		time.Sleep(time.Second) // 给一些时间让服务完成当前操作
+		time.Sleep(time.Second)
 		os.Exit(0)
 	}
 }

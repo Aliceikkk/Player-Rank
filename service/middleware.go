@@ -23,16 +23,6 @@ func NewSignatureMiddleware(apiSecret string) *SignatureMiddleware {
 
 func (m *SignatureMiddleware) Verify(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 添加 CORS 预检请求处理
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Requested-With")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
 		// 获取签名和时间戳
 		signature := r.URL.Query().Get("signature")
 		timestamp := r.URL.Query().Get("timestamp")

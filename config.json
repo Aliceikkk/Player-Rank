@@ -1,22 +1,21 @@
 {
   "source_mysql": {
-    "host": "192.168.1.81",
+    "host": "192.168.31.181",
     "port": 3306,
-    "user": "work",
-    "password": "GenshinImpactOffline2022",
+    "user": "root",
+    "password": "password",
     "database": "db_hk4e_user_gio"
   },
   "target_mysql": {
-    "host": "192.168.1.81",
+    "host": "192.168.31.181",
     "port": 3306,
     "user": "work",
-    "password": "GenshinImpactOffline2022",
+    "password": "password",
     "database": "stat_db"
   },
-  "sync_interval_minutes": 1,
+  "sync_interval_minutes": 10,
   "api_port": 8080,
-  "http_port": 7070,
   "api_secret": "genshinimpact2023",
-  "announcement": "欢迎查看玩家数据排行榜！\n更新时间：每1分钟\n最强一击：显示玩家造成的最高伤害\n飞行专家：显示玩家的最远飞行距离",
+  "announcement": "欢迎查看玩家数据排行榜！\n更新时间：每10分钟\n最强一击：显示玩家造成的最高伤害\n飞行专家：显示玩家的最远飞行距离",
   "last_save_time": "2024-11-23 00:50:45"
-} 
+}
